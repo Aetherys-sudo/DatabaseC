@@ -7,6 +7,7 @@
 #define MAX_DATA 512
 #define MAX_ROWS 100
 
+// definining data structures necessary for the database
 typedef struct Address
 {
 	int id;
@@ -29,6 +30,7 @@ typedef struct Connection
 	Database *db;
 } Connection;
 
+//function that closes the file and frees the allocated memory
 void close_DB(Connection *conn)
 {
 	if (conn)
@@ -46,10 +48,12 @@ void close_DB(Connection *conn)
 	}
 }
 
+//error parsing function that also deallocates memory and closes the database file
 void err_p(Connection *conn, const char* message)
 {
 	if (errno)
 	{	
+		
 		perror(message);
 		if (conn)
 		{
@@ -67,11 +71,13 @@ void err_p(Connection *conn, const char* message)
 	exit(1);
 }
 
+//self-explanatory, prints the database entry
 void print_Address(Address *addr)
 {
 	printf("%d %s %s\n", addr->id, addr->name, addr->email);
 }
 
+//reads the database from file and inserts it in memory
 void load_DB(Connection *conn)
 {
 	int rc = fread(conn->db, sizeof(Database), 1, conn->file);
@@ -82,6 +88,7 @@ void load_DB(Connection *conn)
 	}
 }
 
+//function that allocates the necessary memory and opens file in either read or write, depending on the flag chosen by the user
 Connection *open_DB(const char *filename, char mode)
 {
 	Connection *conn = malloc(sizeof(Connection));
@@ -121,8 +128,11 @@ Connection *open_DB(const char *filename, char mode)
 
 }	
 
+
+//function that passes the database in a file, basically saving it
 void write_DB(Connection *conn)
 {
+	//rewind goes to the beginning of the file
 	rewind(conn->file);
 	int rc = fwrite(conn->db, sizeof(Database), 1, conn->file);
 	if (rc != 1)
@@ -138,6 +148,9 @@ void write_DB(Connection *conn)
 	}
 }		
 
+//function that creates the database entries, set=0 meaning that the field is free and ready to be loaded
+//also sends information about the data size and the database row limit
+// *REQUIRES FURTHER IMPLEMENTATION*
 void create_DB(Connection *conn, int data, int m_rows)
 {
 	int i = 0;
@@ -151,6 +164,7 @@ void create_DB(Connection *conn, int data, int m_rows)
 	}
 }
 
+//checks if the field is set, if it's not it will fill the address field with the provided information
 void set_DB(Connection *conn, int id, const char *name, const char *email)
 {
 	Address *addr = &conn->db->rows[id];
@@ -177,6 +191,7 @@ void set_DB(Connection *conn, int id, const char *name, const char *email)
 	}
 }
 
+//receives an ID as input and prints the entry located at that ID
 void get_DB(Connection *conn, int id)
 {
 	Address *addr = &conn->db->rows[id];
@@ -191,13 +206,16 @@ void get_DB(Connection *conn, int id)
 	}
 }
 
+//resets the entry at the given ID
 void del_DB(Connection *conn, int id)
 {
 	Address addr = {.id = id, .set = 0};
 	conn->db->rows[id] = addr;
 } 
 
-void list_DB(Connection *conn, int id)
+//prints all of the database if the entry is valid, also prints data size and max rows 
+// *FURTHER WORK REQUIRED*
+void list_DB(Connection *conn)
 {
 	int i = 0;
 	Database *db = conn->db;
@@ -214,18 +232,31 @@ void list_DB(Connection *conn, int id)
 	}
 }
 
+void find_DB(Connection *conn)
+{
+	
+}
+
+//main function, argument parsing
 int main(int argc, char *argv[])
 {
+	//checks validity of argument input
+	//program has no way of checking if the inserted arguments are valid or not
+	// *FURTHER WORK REQUIRED*
 	if (argc < 3)
 	{
-		err_p(NULL, "USAGE: database <dbfile> <action> [action params]");
+		err_p(NULL, "USAGE: database <dbfile> <action> <data_size> <rows> [action params]");
 	}
 	
+	//static implementation of argument parsing, needs a rework
 	char *filename = argv[1];
 	char action = argv[2][0];
 	Connection *conn = open_DB(filename, action);
 	int id = 0;
-	
+	if (argc < 4)
+	{
+		err_p(conn, "Data size and number of rows required.");
+	}
 	int data = atoi(argv[3]);
 	int	m_rows = atoi(argv[4]);
 	
@@ -239,6 +270,7 @@ int main(int argc, char *argv[])
 		err_p(conn, "There's not that many records.");
 	}
 	
+	//small scale menu for the application, needs to be improved upon
 	switch(action)
 	{
 		case 'c':
@@ -273,7 +305,7 @@ int main(int argc, char *argv[])
 			break;
 		
 		case 'l':
-			list_DB(conn, id);
+			list_DB(conn);
 			break;
 		
 		default:
